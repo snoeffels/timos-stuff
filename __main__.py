@@ -9,45 +9,33 @@ location = "./asc"
 files = [f for f in os.listdir(location) if not f.startswith('.')]
 num_files = len(files)
 
-# in drei Gruppen einteilen
-group1 = files[0::3]  # Gruppe 1
-# group2 = files[1::3]  # Gruppe 2
-# group3 = files[2::3]  # Gruppe 3
+groups = [[] for _ in range(num_files)]
+for i, file in enumerate(files):
+    groups[i % num_files].append(file)
 
 # Arrays zum Speichern erstellen
-empty1 = np.zeros(1024)
-# empty2 = np.zeros(1024)
-# empty3 = np.zeros(1024)
+data_arrays = [np.zeros(1024) for _ in range(num_files)]
 
-# Schleife zum Aufaddieren der Gruppe 1
-for file in group1:
-    filepath = os.path.join(location, file)
-    data = np.loadtxt(filepath, delimiter=",")
-    empty1 += data[:, 1]
-wavelength = data[:, 0]  # Vektor mit allen Wellenlängen
-mean_values1 = empty1 / len(group1)
-final1 = np.column_stack((wavelength, mean_values1))
+# Daten verarbeiten
+wavelength = None
+for idx, group in enumerate(groups):
+    for file in group:
+        filepath = os.path.join(location, file)
+        data = np.loadtxt(filepath, delimiter=",")
+        data_arrays[idx] += data[:, 1]
 
-# Schleife zum Aufaddieren der Gruppe 2
-# for file in group2:
-#     filepath = os.path.join(location, file)
-#     data = np.loadtxt(filepath)
-#     empty2 += data[:, 1]
-# mean_values2 = empty2 / len(group2)
-# final2 = np.column_stack((wavelength, mean_values2))
+    if wavelength is None:
+        wavelength = data[:, 0]  # Wellenlängen speichern
 
-# Schleife zum Aufaddieren der Gruppe 3
-# for file in group3:
-#     filepath = os.path.join(location, file)
-#     data = np.loadtxt(filepath)
-#     empty3 += data[:, 1]
-# mean_values3 = empty3 / len(group3)
-# final3 = np.column_stack((wavelength, mean_values3))
+    mean_values = data_arrays[idx] / len(group)
+    groups[idx] = np.column_stack((wavelength, mean_values))
 
 # Plot erstellen
-plt.plot(final1[:, 0], final1[:, 1], 'b', label='1st shot')
-# plt.plot(final2[:, 0], final2[:, 1], 'r', label='2nd shot')
-# plt.plot(final3[:, 0], final3[:, 1], 'g', label='3rd shot')
+colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k'] * (num_files // 7 + 1)
+plt.figure(figsize=(10, 6))
+
+for idx, group_data in enumerate(groups):
+    plt.plot(group_data[:, 0], group_data[:, 1], colors[idx], label=f'Group {idx + 1}')
 
 # Legende erstellen
 plt.legend()
@@ -59,5 +47,5 @@ plt.ylabel('y-Achse (Counts)')
 # Titel hinzufügen
 plt.title('Gemittelte Counts für Z=500')
 
-# Diagramm anzeigen
-plt.savefig("plot.png")  # Speichert das Diagramm als PNG
+# Diagramm speichern
+plt.savefig("plot.png")
